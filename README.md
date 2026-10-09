@@ -31,6 +31,13 @@ See the step list in [docs/METHOD.md](docs/METHOD.md).
 | `src/ui/` | Screens: board, hero panels, quest sheets, prompts | yes |
 | `assets/` | Local only, never pushed: the rulebook PDF and photos of the components | |
 
+## Deploy (Vercel)
+
+Project: [darkowoodpeckers-projects/warcraft-pandemic](https://vercel.com/darkowoodpeckers-projects/warcraft-pandemic),
+connected to this repo: every push to `main` deploys, every pull request gets a preview link.
+There is no app yet, so the site shows a 404 until the Vite app exists. When it's added, copy `vercel.json` from
+clank-demo (`framework: vite`, `npm ci`, `npm run build`, output `dist/`).
+
 ## Not in this repo
 
 The rulebook PDF and photos of the real components stay in `assets/` (git-ignored). Ask the project owner for them,

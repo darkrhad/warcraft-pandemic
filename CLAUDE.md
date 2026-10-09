@@ -14,7 +14,8 @@ built with the same method as clank-demo (`github.com/darkrhad/clank`). Read the
 
 - **Online multiplayer** across devices, host browser + WebRTC + Firestore lobby (docs/ONLINE.md). No AI opponents.
 - **Original World of Warcraft names** (heroes, places, quests). No Blizzard art or the rulebook PDF in git.
-- Stack like clank-demo: Vite + React 18 + TypeScript, Immer, Vitest; deployed on Vercel.
+- Stack like clank-demo: Vite + React 18 + TypeScript, Immer, Vitest; deployed on Vercel
+  (`darkowoodpeckers-projects/warcraft-pandemic`, deploys on every push to `main`).
 
 ## Rules for changes
 
