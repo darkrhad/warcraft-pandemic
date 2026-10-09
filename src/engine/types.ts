@@ -5,7 +5,7 @@
 // has a place here. Values not in the rulebook are marked "assumed" or "unknown"
 // and listed in ANALYSIS.md.
 
-export type SpaceId = string; // a board space, e.g. "naxxramas"; ~30 spaces + Icecrown Citadel (unknown: full list)
+export type SpaceId = string; // a board space, e.g. "naxxramas"; 30 spaces + Icecrown Citadel (docs/CONTENT.md)
 export type Region = 'red' | 'yellow' | 'purple';
 export type CardUid = string; // e.g. "fight2#7"; the part before "#" is the card id
 export type PlayerId = string;
@@ -22,15 +22,15 @@ export interface HeroDef {
   abilities: AbilityId[];
 }
 
-// Names from the rulebook's Fine Points; the full texts are on the hero sheets (unknown).
+// Names from the rulebook (Fine Points and the components picture); texts in docs/CONTENT.md.
 export type AbilityId =
-  | 'pressForward' // Tirion
+  | 'ashbringer' | 'pressForward' // Tirion
   | 'indomitable' | 'layOnHands' // Liadrin
   | 'chainLightning' | 'iAmTheWarchief' // Thrall
-  | 'wailingArrow' // Sylvanas: fight on a connected space as if you were there, no damage to you
-  | 'legacyOfTheBronzebeard' // Muradin: +1 card to his own quest actions
-  | 'teleport' | 'frostArmor' // Jaina (frostArmor: assumed, half-readable on the setup picture)
-  | 'forTheAlliance'; // Varian: moves ghouls
+  | 'wailingArrow' | 'willOfTheForsaken' // Sylvanas
+  | 'legacyOfTheBronzebeard' // Muradin (second ability unknown)
+  | 'teleport' | 'frostArmor' // Jaina
+  | 'forTheAlliance'; // Varian (second ability unknown)
 
 // --- Cards (63 hero cards, 9 reward cards, 30 Scourge cards) ---
 
@@ -51,7 +51,7 @@ export type RewardId =
   | 'blessingOfTheLight' | 'gunshipSupport' | 'newAllies' | 'onwardToVictory'
   | string; // the 9th reward is not named in the rulebook
 
-// A Scourge card names one space (and so one region). Assumed: one card per non-quest space.
+// A Scourge card names one space (and so one region). 30 cards = 30 spaces (assumed; setup draws Naxxramas, so quest spaces have cards too).
 export interface ScourgeCardDef { id: string; space: SpaceId }
 
 // --- Quests (10 quest sheets incl. Icecrown, 3 quest markers, 3 progress markers) ---
@@ -59,7 +59,7 @@ export interface ScourgeCardDef { id: string; space: SpaceId }
 export interface QuestDef {
   id: string; // e.g. "naxxramas", "theNexus", "ulduar", "icecrown"
   region: Region | 'icecrown';
-  space: SpaceId; // the quest space on the board
+  space: SpaceId; // the regular board space that gets this quest's marker (e.g. Naxxramas)
   track: (QuestIcon | 'any')[]; // unknown: icons on each track space ('any' = only dice successes)
   damage: number; // damage after each quest action (Naxxramas example: 2)
   effect?: QuestEffect;
@@ -107,7 +107,7 @@ export interface Turn {
 
 // A choice, or a window where other heroes may react, that must be closed before
 // anything else happens. Unlike Clank!, players other than the current one answer
-// these (Fight/Defend cards, quest contributions), so moves carry `by`.
+// these (Fight/Defend cards, quest contributions), so the engine checks Action.by.
 export type Pending =
   | { kind: 'fightCards'; roll: DieFace[]; bonus: number; passed: PlayerId[] } // heroes on the space add Fight cards
   | { kind: 'assignHits'; hits: number } // current player splits successes over ghouls/abominations
@@ -149,24 +149,32 @@ export interface GameState {
   result: 'won' | 'lost' | null;
 }
 
-// Every action a player can take. `by` is who sends it: reactions and reward
-// cards can come from any player, not only the current one.
+// Every action a player can take. Who sends it is not part of the move: online,
+// the host wraps each move in an Action with the sender's seat (see docs/ONLINE.md),
+// so a player can never pretend to be someone else. Reactions (Fight/Defend cards,
+// quest contributions) and reward cards can come from any player, not only the current one.
 export type Move =
-  // the 4 actions
+  // the 4 actions (current player only)
   | { type: 'move'; to: SpaceId }
   | { type: 'fight'; target?: SpaceId } // target: Wailing Arrow / Chain Lightning
   | { type: 'quest' }
   | { type: 'rest' }
   | { type: 'flightPath'; to: SpaceId }
   | { type: 'ability'; ability: AbilityId; target?: SpaceId | PlayerId; spaces?: SpaceId[] }
-  // free actions and reactions
-  | { type: 'playCard'; by: PlayerId; uid: CardUid; hero?: PlayerId; to?: SpaceId } // Fight, Defend, Travel, Heal
-  | { type: 'contribute'; by: PlayerId; uid: CardUid } // quest card, kept in hand
-  | { type: 'playReward'; by: PlayerId; uid: CardUid; choice?: unknown }
-  | { type: 'pass'; by: PlayerId } // done reacting in a window
+  // free actions and reactions (any player, when the rules allow it)
+  | { type: 'playCard'; uid: CardUid; hero?: PlayerId; to?: SpaceId } // Fight, Defend, Travel, Heal
+  | { type: 'contribute'; uid: CardUid } // quest card, kept in hand
+  | { type: 'playReward'; uid: CardUid; choice?: unknown }
+  | { type: 'pass' } // done reacting in a window
   // answers to pending choices
   | { type: 'assignHits'; ghouls: number; abominations: number[] }
   | { type: 'placeStronghold'; space: SpaceId }
   | { type: 'chooseHero'; player: PlayerId }
-  | { type: 'discard'; by: PlayerId; uid: CardUid }
+  | { type: 'discard'; uid: CardUid }
   | { type: 'endActions' };
+
+// What the engine gets: applyMove(state, action). `by` is the sender's player id.
+export interface Action {
+  by: PlayerId;
+  move: Move;
+}

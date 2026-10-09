@@ -1,7 +1,8 @@
 # Wrath of the Lich King: rulebook analysis
 
 Steps 1 and 2 of the clank-demo playbook (chapter 10): read the rulebook, list the components.
-The components as code are in `src/engine/types.ts`.
+The components as code are in `src/engine/types.ts`. The full rules are in `docs/RULES.md`, the content
+in `docs/CONTENT.md`; this page is the summary and the complexity estimate.
 
 ## 1. The rules in short
 
@@ -39,7 +40,7 @@ and +1 for each ghoul, abomination or hero card that can't be taken because the 
 
 | Component | Count | In `types.ts` | Known from the rulebook? |
 |---|---|---|---|
-| Board: ~30 spaces in 3 regions + Icecrown, 3 Lich King spaces | 1 | `SpaceId`, `Region` | ❌ names, connections, coordinates |
+| Board: ~30 spaces in 3 regions + Icecrown, 3 Lich King spaces | 1 | `SpaceId`, `Region` | ⚠️ names read from a picture; connections and coordinates missing |
 | Heroes (figure + sheet) | 7 | `HeroDef`, `AbilityId` | ⚠️ names and some abilities; health, start space and full texts missing |
 | Hero cards | 63 = 52 + 8 Scourge Rises + 3 Stronghold | `HeroCardDef` | ⚠️ 4 kinds known; **how many of each** missing |
 | Reward cards | 9 | `RewardId` | ⚠️ 8 names, effects only partly known |
@@ -51,18 +52,12 @@ and +1 for each ghoul, abomination or hero card that can't be taken because the 
 | Dice | 2 | `DieFace` | ❌ how many success / block / blank faces |
 | Progress, quest, solo markers, sliders | 3, 3, 1, 5 | `ActiveQuest`, `Player.health` | ✅ |
 
-### What I need from you (photos, like the clank-demo cards)
-
-1. 🗺️ **The board**, top-down and sharp: space names, lines between spaces, Lich King spaces, both tracks with their numbers.
-2. 🧙 **7 hero sheets**, front and back (health, abilities, start space).
-3. 📜 **10 quest sheets** (the icon track, damage, effect).
-4. 🃏 **Hero cards:** one of each kind is enough, plus the count per kind (e.g. "Fight 1 ×12").
-5. 🎁 **9 reward cards.**
-6. 🎲 **One die**, all 6 faces.
+Photos still needed: see the list at the end of `docs/CONTENT.md`.
 
 ## 3. How complex is it compared to clank-demo?
 
-**Overall: about 60–70% of the clank-demo work for pass-and-play.** Online multiplayer adds another chunk (see below).
+**Overall: about 60–70% of the clank-demo work for a one-screen game. Online (decided) brings it to roughly the
+same size as clank-demo**, mostly the connection layer, which can be copied from dice_king.
 
 | Part | clank-demo | Wrath of the Lich King | Effect |
 |---|---|---|---|
@@ -84,7 +79,7 @@ and +1 for each ghoul, abomination or hero card that can't be taken because the 
    window where *other* heroes may play cards. So every `Move` carries `by`, and `Pending` holds who has
    already passed. The engine stays the same (`applyMove` + `pending`); only the turn flow has more stops.
    In a UI with everyone at one table this is a "Play Defend? / Pass" prompt for each hero on the space.
-2. **Online multiplayer (if you want it).** Because the engine is pure and seeded, the approach from
+2. **Online multiplayer (decided, see docs/ONLINE.md).** Because the engine is pure and seeded, the approach from
    playbook exercise 7 works: one host (or a small server) runs `applyMove`, everyone else sends moves and
    gets the state. No hidden information here, so the whole state can be sent to everyone, which is simpler than Clank!.
    The new work is the connection (rooms, reconnecting) and reaction windows that wait for remote players.
@@ -94,8 +89,7 @@ and +1 for each ghoul, abomination or hero card that can't be taken because the 
 Same lesson as clank-demo: the rulebook doesn't contain the board, the quest sheets, the hero sheets or the
 card counts. Without the photos above, the engine can be built, but with `source: 'assumed'` everywhere.
 
-## Open questions
+## Decisions (2026-10-09)
 
-- **Multiplayer:** pass-and-play on one screen (like clank-demo), or online across devices?
-- **Theme:** World of Warcraft names and art are Blizzard's. clank-demo used its own names, art and a Vietnamese twist
-  because the repo is public and deployed. The same here?
+- **Online multiplayer** across devices: docs/ONLINE.md.
+- **Original World of Warcraft names.** No Blizzard art and no rulebook PDF in the (public) repo.
