@@ -49,6 +49,11 @@
   .tiny { font: 600 13px Inter, sans-serif; fill: var(--ink-soft); text-anchor: middle; pointer-events: none; }
   .ring { animation: pulse 1.6s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: .45; } }
+  button.big {
+    font: 600 14px Inter, sans-serif; padding: 9px 14px; border-radius: 8px; border: 0;
+    background: #2f6f95; color: #fff; cursor: pointer;
+  }
+  button.big:disabled { opacity: .5; cursor: default; }
   .notes { margin: 14px auto 30px; color: var(--ink-soft); }
   .notes li { margin: 3px 0; }
 </style>
@@ -64,6 +69,8 @@
   <label>Figure size <input id="size" type="range" min="70" max="220" value="140"></label>
   <label><input id="shadow" type="checkbox" checked> Shadow + ring</label>
   <label><input id="compare" type="checkbox" checked> Flat pawn next to him</label>
+  <button id="lk-button" class="big">Lich King moves</button>
+  <button id="ic-button" class="big">Open Icecrown</button>
 </div>
 
 <div class="board-wrap">
@@ -92,17 +99,28 @@
   <g id="links" stroke="var(--ink)" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round" fill="none" filter="url(#sketch)" opacity=".6"></g>
   <g id="spaces"></g>
 
-  <!-- Icecrown Citadel: sketch of the tower, closed -->
-  <g transform="translate(560 450) scale(.8)" filter="url(#sketch)">
-    <ellipse rx="92" ry="34" fill="url(#frost)"/>
-    <ellipse rx="78" ry="26" fill="#dfe9ef" stroke="var(--ink)" stroke-width="3"/>
-    <path d="M-60 0 L-60 -60 L-45 -60 L-45 -45 L-30 -45 L-30 -60 L30 -60 L30 -45 L45 -45 L45 -60 L60 -60 L60 0" fill="#c9d9e4" stroke="var(--ink)" stroke-width="3"/>
-    <path d="M-22 -50 L-14 -190 L0 -240 L14 -190 L22 -50 Z" fill="#a9c3d6" stroke="var(--ink)" stroke-width="3"/>
-    <path d="M-40 -55 L-34 -130 L-28 -55 Z M28 -55 L34 -130 L40 -55 Z" fill="#a9c3d6" stroke="var(--ink)" stroke-width="2.5"/>
-    <circle cy="-200" r="7" fill="var(--ice)"/>
+  <!-- Icecrown Citadel: back of the base, tower (clipped at the pit line), front of the base -->
+  <clipPath id="above-pit" clipPathUnits="userSpaceOnUse"><rect x="0" y="0" width="1200" height="478"/></clipPath>
+  <clipPath id="below-pit" clipPathUnits="userSpaceOnUse"><rect x="0" y="478" width="1200" height="400"/></clipPath>
+  <g id="icecrown">
+    <ellipse id="ic-glow" cx="560" cy="500" rx="190" ry="70" fill="url(#frost)"/>
+    <g id="ic-closed">
+      <image href="ic-base.png" x="390" y="340" width="340" height="269"/>
+      <g clip-path="url(#above-pit)">
+        <g id="ic-tower"><image href="ic-tower.png" x="504" y="190" width="112" height="300"/></g>
+      </g>
+      <image href="ic-base.png" x="390" y="340" width="340" height="269" clip-path="url(#below-pit)"/>
+    </g>
+    <image id="ic-open" href="ic-open.png" x="390" y="368" width="340" height="241" style="display:none"/>
+    <g id="ic-cracks" stroke="#dff6ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0">
+      <path d="M560 240 L552 285 L566 320 L548 370 L560 420"/>
+      <path d="M552 285 L530 300 M566 320 L585 338 M548 370 L528 392"/>
+    </g>
+    <g id="ic-shards"></g>
+    <circle id="ic-flash" cx="560" cy="440" r="240" fill="#e9f8ff" opacity="0"/>
   </g>
-  <text class="label" x="560" y="500">Icecrown Citadel</text>
-  <text class="tiny" x="560" y="518">closed</text>
+  <text class="label" x="560" y="636">Icecrown Citadel</text>
+  <text class="tiny" id="ic-state" x="560" y="654">closed</text>
 
   <g id="pieces"></g>
 </svg>
@@ -111,19 +129,22 @@
 <ul class="notes">
   <li>All 4 versions come from the same prompt (<code>PROMPT.md</code>) with different seeds. Background cut out with macOS Vision.</li>
   <li>The figure is anchored at its base, so it stands on the space and overlaps what's behind it.</li>
+  <li>Icecrown: 3 renders (<code>ICECROWN.md</code>): tower, closed base, open base. The closed base is drawn twice, split at the pit line, so the tower sinks behind the front wall. Shake, cracks, shards and flash are code.</li>
+  <li>Lich King: same miniature prompt style (<code>PROMPT.md</code>, version 1 of 4). He stands on the dashed Lich King spaces, moves with "Lich King moves", and goes to Icecrown when it opens.</li>
   <li>The flat pawn is the other option: a colored disc with a class icon, which is easier to read when spaces are crowded.</li>
 </ul>
 
 <script>
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const SPACES = {
   shadowVault:  { name: 'Shadow Vault', x: 420, y: 110, region: 'yellow' },
-  argent:       { name: 'Argent Tournament', x: 600, y: 150, region: 'yellow' },
+  argent:       { name: 'Argent Tournament', x: 590, y: 100, region: 'yellow' },
   theBreach:    { name: 'The Breach', x: 790, y: 120, region: 'yellow' },
   dalaran:      { name: 'Dalaran', x: 740, y: 290, region: 'yellow' },
   warsongHold:  { name: 'Warsong Hold', x: 140, y: 420, region: 'red' },
   theNexus:     { name: 'The Nexus', x: 290, y: 560, region: 'red' },
   valianceKeep: { name: 'Valiance Keep', x: 140, y: 650, region: 'red' },
-  enKilah:      { name: "Temple City of En'Kilah", x: 330, y: 360, region: 'red' },
+  enKilah:      { name: "Temple City of En'Kilah", x: 290, y: 360, region: 'red' },
   wyrmrest:     { name: 'Wyrmrest Temple', x: 920, y: 380, region: 'purple' },
   naxxramas:    { name: 'Naxxramas', x: 1060, y: 520, region: 'purple' },
   grizzlemaw:   { name: 'Grizzlemaw', x: 900, y: 640, region: 'purple' },
@@ -163,6 +184,30 @@ el('circle', { cy: -14, r: 20, fill: '#5b8fd1', stroke: '#fff', 'stroke-width': 
 el('path', { d: 'M0 -27 L5 -17 L15 -15 L7 -8 L9 3 L0 -2 L-9 3 L-7 -8 L-15 -15 L-5 -17 Z', fill: '#fff' }, pawn);
 el('text', { class: 'tiny', x: 50, y: -10 }, pawn).textContent = 'Jaina (flat)';
 
+// --- Lich King spaces (one per region, not normal spaces) and his figure ---
+const LICH_SPACES = { red: { x: 60, y: 540 }, yellow: { x: 290, y: 215 }, purple: { x: 1110, y: 330 }, icecrown: { x: 528, y: 478 } };
+const lkSpaces = el('g', {}, pieces);
+for (const region of ['red', 'yellow', 'purple']) {
+  const { x, y } = LICH_SPACES[region];
+  const g = el('g', { filter: 'url(#sketch)' }, lkSpaces);
+  el('ellipse', { cx: x, cy: y, rx: 42, ry: 17, fill: '#2b2f3a55', stroke: COLOR[region], 'stroke-width': 3, 'stroke-dasharray': '6 5' }, g);
+  el('text', { class: 'tiny', x, y: y + 34 }, lkSpaces).textContent = 'Lich King';
+}
+const lich = el('g', {}, pieces);
+el('ellipse', { rx: 40, ry: 13, fill: 'url(#shade)' }, lich);
+el('ellipse', { rx: 34, ry: 11, fill: 'none', stroke: '#7fd6ff', 'stroke-width': 3, opacity: .7 }, lich);
+el('image', { href: 'lichking.png', x: -46, y: -152, width: 92, height: 154 }, lich);
+let lichAt = 'purple';
+const lichXY = (k) => `translate(${LICH_SPACES[k].x}px, ${LICH_SPACES[k].y + 4}px)`;
+function moveLich(to, ms = 900) {
+  const from = lichXY(lichAt);
+  lichAt = to;
+  lich.style.transform = lichXY(to);
+  lich.animate([{ transform: from, opacity: 1 }, { opacity: .35, offset: .5 }, { transform: lichXY(to), opacity: 1 }], { duration: ms, easing: 'ease-in-out' });
+  return wait(ms);
+}
+lich.style.transform = lichXY(lichAt);
+
 const hero = el('g', {}, pieces);
 const heroShadow = el('g', {}, hero);
 el('ellipse', { rx: 46, ry: 14, fill: 'url(#shade)' }, heroShadow);
@@ -178,7 +223,7 @@ const place = () => {
   Object.entries({ x: -w / 2, y: -heightPx, width: w, height: heightPx }).forEach(([k, v]) => img.setAttribute(k, v));
 };
 function moveTo(id) {
-  if (id === at) return;
+  if (id === at || (id === 'icecrown' && !icecrownOpen)) return;
   const a = SPACES[at], b = SPACES[id];
   const from = `translate(${a.x - 8}px, ${a.y + 6}px)`, to = `translate(${b.x - 8}px, ${b.y + 6}px)`;
   const mid = `translate(${(a.x + b.x) / 2 - 8}px, ${(a.y + b.y) / 2 + 6 - 60}px)`;
@@ -186,6 +231,79 @@ function moveTo(id) {
   hero.animate([{ transform: from }, { transform: mid }, { transform: to }], { duration: 650, easing: 'ease-in-out' });
   place();
 }
+
+// --- Icecrown: closed → open ---
+SPACES.icecrown = { name: 'Icecrown Citadel', x: 612, y: 476 };
+let icecrownOpen = false;
+const $ = (id) => document.getElementById(id);
+$('icecrown').style.cursor = 'pointer';
+$('icecrown').addEventListener('click', () => moveTo('icecrown'));
+
+async function openIcecrown() {
+  const button = $('ic-button');
+  button.disabled = true;
+  if (icecrownOpen) { // reset
+    $('ic-open').style.display = 'none';
+    $('ic-closed').style.display = '';
+    $('ic-state').textContent = 'closed';
+    $('ic-glow').style.opacity = 1;
+    if (at === 'icecrown') { at = 'theBreach'; place(); }
+    moveLich('purple', 600);
+    $('lk-button').disabled = false;
+    icecrownOpen = false;
+    button.textContent = 'Open Icecrown';
+    button.disabled = false;
+    return;
+  }
+  const tower = $('ic-tower');
+  // 1. shake + cracks
+  tower.animate([0, -5, 5, -4, 4, -6, 6, -3, 3, 0].map((x) => ({ transform: `translateX(${x}px)` })), { duration: 900 });
+  $('ic-cracks').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 900, fill: 'forwards' });
+  await wait(900);
+  // 2. sink behind the front wall, ice shards fly out
+  $('ic-cracks').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
+  tower.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(320px)' }], { duration: 1300, easing: 'cubic-bezier(.5,0,.9,.6)', fill: 'forwards' });
+  shards();
+  await wait(1100);
+  // 3. flash, swap to the open base
+  $('ic-flash').animate([{ opacity: 0 }, { opacity: .95, offset: .3 }, { opacity: 0 }], { duration: 900 });
+  await wait(270);
+  $('ic-closed').style.display = 'none';
+  $('ic-open').style.display = '';
+  $('ic-glow').style.opacity = .5;
+  $('ic-state').textContent = 'open: heroes can enter';
+  tower.getAnimations().forEach((a) => a.cancel());
+  await wait(630);
+  // 4. the Lich King moves to Icecrown and stays there
+  $('lk-button').disabled = true;
+  await moveLich('icecrown', 1200);
+  icecrownOpen = true;
+  button.textContent = 'Close Icecrown';
+  button.disabled = false;
+}
+
+function shards() {
+  const g = $('ic-shards');
+  for (let i = 0; i < 26; i++) {
+    const p = el('path', { d: 'M0 -9 L4 0 L0 9 L-4 0 Z', fill: i % 3 ? '#bfe9ff' : '#ffffff', stroke: '#5aa7cf', 'stroke-width': 1 }, g);
+    const angle = -Math.PI * (0.05 + 0.9 * Math.random());
+    const dist = 90 + Math.random() * 170;
+    const x0 = 545 + Math.random() * 30, y0 = 470;
+    const dx = Math.cos(angle) * dist, dy = Math.sin(angle) * dist;
+    p.animate([
+      { transform: `translate(${x0}px, ${y0}px) rotate(0deg)`, opacity: 1 },
+      { transform: `translate(${x0 + dx}px, ${y0 + dy}px) rotate(${Math.random() * 720 - 360}deg)`, opacity: 1, offset: .6 },
+      { transform: `translate(${x0 + dx * 1.15}px, ${y0 + dy + 90}px) rotate(${Math.random() * 720}deg)`, opacity: 0 },
+    ], { duration: 1200 + Math.random() * 500, delay: Math.random() * 600, easing: 'ease-out', fill: 'forwards' }).finished.then(() => p.remove());
+  }
+}
+$('ic-button').onclick = openIcecrown;
+// Scourge card from the bottom of the deck: he moves to another region's Lich King space
+$('lk-button').onclick = () => {
+  const next = { red: 'yellow', yellow: 'purple', purple: 'red' }[lichAt];
+  if (next) moveLich(next);
+};
+if (location.hash === '#open') setTimeout(openIcecrown, 500); // plays the opening on load
 
 const versions = document.getElementById('versions');
 [1, 2, 3, 4].forEach((v) => {

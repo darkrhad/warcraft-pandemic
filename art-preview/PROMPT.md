@@ -14,6 +14,16 @@ Original design: a generic old paladin, not a copy of Blizzard's Tirion.
 > a three-quarter front view, slightly from above. He stands on a small round dark stone base with
 > frosty snow on it.
 
+## Lich King
+
+> A single tabletop board game miniature figure of a towering undead king of ice and death,
+> wearing heavy black and dark steel spiked plate armor with frost on the edges, a tall horned
+> spiked crown helmet that hides his face except two glowing cold blue eyes, huge spiked
+> pauldrons with skulls, a long tattered dark cape, holding a long jagged runic sword glowing
+> icy blue, cold blue mist around his feet. Menacing standing pose, full body from head to
+> feet, seen from a three-quarter front view, slightly from above. He stands on a small round
+> dark stone base with ice and frost on it.
+
 ## Style
 
 > Hand-painted collectible miniature, highly detailed sculpt, crisp painted edges, rich saturated
