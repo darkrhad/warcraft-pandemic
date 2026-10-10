@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hero Figure Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #efe6d2;
+    --ink: #3b3226;
+    --ink-soft: #7a6c57;
+    --red: #b4483c;
+    --yellow: #c9a227;
+    --purple: #7b55a3;
+    --ice: #6fa3c7;
+    --panel: #fffaf0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #d9cdb3;
+    color: var(--ink);
+    font: 15px/1.45 Inter, system-ui, sans-serif;
+  }
+  header, .controls, .notes { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+  header h1 { font: 700 34px/1.1 Caveat, cursive; margin: 18px 0 2px; }
+  header p { margin: 0 0 12px; color: var(--ink-soft); }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin-bottom: 12px;
+  }
+  .controls label { display: flex; gap: 8px; align-items: center; }
+  .versions { display: flex; gap: 6px; }
+  .versions button {
+    width: 54px; height: 72px; padding: 2px; border: 2px solid transparent; border-radius: 8px;
+    background: var(--panel); cursor: pointer;
+  }
+  .versions button img { width: 100%; height: 100%; object-fit: contain; }
+  .versions button[aria-pressed="true"] { border-color: var(--yellow); box-shadow: 0 0 0 2px #fff6; }
+  .board-wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+  svg.board {
+    display: block; width: 100%; height: auto; border-radius: 14px;
+    box-shadow: 0 6px 30px #0003; background: var(--paper);
+  }
+  .space { cursor: pointer; }
+  .space:hover .disc { stroke-width: 4; }
+  .label { font: 700 22px Caveat, cursive; fill: var(--ink); text-anchor: middle; pointer-events: none; }
+  .tiny { font: 600 13px Inter, sans-serif; fill: var(--ink-soft); text-anchor: middle; pointer-events: none; }
+  .ring { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  .notes { margin: 14px auto 30px; color: var(--ink-soft); }
+  .notes li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hero figure on a sketch board</h1>
+  <p>Trial render of Tirion Fordring (Draw Things, DreamShaper XL Turbo). Click a space to move him. Board layout and links are made up.</p>
+</header>
+
+<div class="controls">
+  <div class="versions" id="versions"></div>
+  <label>Figure size <input id="size" type="range" min="70" max="220" value="140"></label>
+  <label><input id="shadow" type="checkbox" checked> Shadow + ring</label>
+  <label><input id="compare" type="checkbox" checked> Flat pawn next to him</label>
+</div>
+
+<div class="board-wrap">
+<svg class="board" id="board" viewBox="0 0 1200 760" role="img" aria-label="Sketch board with one hero figure">
+  <defs>
+    <!-- wobbly pencil lines -->
+    <filter id="sketch"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="4"/></filter>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n"/><feColorMatrix in="n" values="0 0 0 0 .23  0 0 0 0 .19  0 0 0 0 .14  0 0 0 .08 0"/></filter>
+    <radialGradient id="shade"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    <radialGradient id="frost"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#cfe3f0" stop-opacity="0"/></radialGradient>
+  </defs>
+
+  <rect width="1200" height="760" fill="var(--paper)"/>
+  <rect width="1200" height="760" filter="url(#grain)"/>
+
+  <!-- region washes -->
+  <g filter="url(#sketch)" opacity=".16">
+    <path d="M20 330 C120 260 300 300 380 400 C420 520 330 700 120 740 L20 740 Z" fill="var(--red)"/>
+    <path d="M300 30 C500 10 760 20 880 60 C900 170 780 240 600 250 C440 250 320 190 300 30 Z" fill="var(--yellow)"/>
+    <path d="M880 280 C1000 240 1180 300 1180 420 L1180 740 L820 740 C760 600 780 360 880 280 Z" fill="var(--purple)"/>
+  </g>
+  <text class="tiny" x="110" y="725" style="text-anchor:start">RED · WEST</text>
+  <text class="tiny" x="600" y="22">YELLOW · NORTH</text>
+  <text class="tiny" x="1090" y="725">PURPLE · EAST</text>
+
+  <g id="links" stroke="var(--ink)" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round" fill="none" filter="url(#sketch)" opacity=".6"></g>
+  <g id="spaces"></g>
+
+  <!-- Icecrown Citadel: sketch of the tower, closed -->
+  <g transform="translate(560 450) scale(.8)" filter="url(#sketch)">
+    <ellipse rx="92" ry="34" fill="url(#frost)"/>
+    <ellipse rx="78" ry="26" fill="#dfe9ef" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M-60 0 L-60 -60 L-45 -60 L-45 -45 L-30 -45 L-30 -60 L30 -60 L30 -45 L45 -45 L45 -60 L60 -60 L60 0" fill="#c9d9e4" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M-22 -50 L-14 -190 L0 -240 L14 -190 L22 -50 Z" fill="#a9c3d6" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M-40 -55 L-34 -130 L-28 -55 Z M28 -55 L34 -130 L40 -55 Z" fill="#a9c3d6" stroke="var(--ink)" stroke-width="2.5"/>
+    <circle cy="-200" r="7" fill="var(--ice)"/>
+  </g>
+  <text class="label" x="560" y="500">Icecrown Citadel</text>
+  <text class="tiny" x="560" y="518">closed</text>
+
+  <g id="pieces"></g>
+</svg>
+</div>
+
+<ul class="notes">
+  <li>All 4 versions come from the same prompt (<code>PROMPT.md</code>) with different seeds. Background cut out with macOS Vision.</li>
+  <li>The figure is anchored at its base, so it stands on the space and overlaps what's behind it.</li>
+  <li>The flat pawn is the other option: a colored disc with a class icon, which is easier to read when spaces are crowded.</li>
+</ul>
+
+<script>
+const SPACES = {
+  shadowVault:  { name: 'Shadow Vault', x: 420, y: 110, region: 'yellow' },
+  argent:       { name: 'Argent Tournament', x: 600, y: 150, region: 'yellow' },
+  theBreach:    { name: 'The Breach', x: 790, y: 120, region: 'yellow' },
+  dalaran:      { name: 'Dalaran', x: 740, y: 290, region: 'yellow' },
+  warsongHold:  { name: 'Warsong Hold', x: 140, y: 420, region: 'red' },
+  theNexus:     { name: 'The Nexus', x: 290, y: 560, region: 'red' },
+  valianceKeep: { name: 'Valiance Keep', x: 140, y: 650, region: 'red' },
+  enKilah:      { name: "Temple City of En'Kilah", x: 330, y: 360, region: 'red' },
+  wyrmrest:     { name: 'Wyrmrest Temple', x: 920, y: 380, region: 'purple' },
+  naxxramas:    { name: 'Naxxramas', x: 1060, y: 520, region: 'purple' },
+  grizzlemaw:   { name: 'Grizzlemaw', x: 900, y: 640, region: 'purple' },
+};
+const LINKS = [['shadowVault','argent'],['argent','theBreach'],['argent','dalaran'],['theBreach','dalaran'],['shadowVault','enKilah'],
+  ['enKilah','warsongHold'],['warsongHold','theNexus'],['theNexus','valianceKeep'],['enKilah','theNexus'],['dalaran','wyrmrest'],
+  ['theBreach','wyrmrest'],['wyrmrest','naxxramas'],['naxxramas','grizzlemaw'],['wyrmrest','grizzlemaw']];
+const COLOR = { red: 'var(--red)', yellow: 'var(--yellow)', purple: 'var(--purple)' };
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent?.appendChild(e); return e; };
+
+const links = document.getElementById('links');
+for (const [a, b] of LINKS) el('line', { x1: SPACES[a].x, y1: SPACES[a].y, x2: SPACES[b].x, y2: SPACES[b].y }, links);
+
+const spacesG = document.getElementById('spaces');
+for (const [id, s] of Object.entries(SPACES)) {
+  const g = el('g', { class: 'space', 'data-id': id }, spacesG);
+  const d = el('g', { filter: 'url(#sketch)' }, g);
+  el('ellipse', { cx: s.x, cy: s.y, rx: 62, ry: 26, fill: '#fff8', stroke: COLOR[s.region], 'stroke-width': 3, class: 'disc' }, d);
+  el('text', { class: 'label', x: s.x, y: s.y + 50 }, g).textContent = s.name;
+  g.addEventListener('click', () => moveTo(id));
+}
+
+// --- pieces: two ghouls, a flat pawn, and the hero figure ---
+const pieces = document.getElementById('pieces');
+function ghoul(x, y) {
+  const g = el('g', { transform: `translate(${x} ${y})`, filter: 'url(#sketch)' }, pieces);
+  el('ellipse', { cy: 2, rx: 13, ry: 5, fill: 'url(#shade)' }, g);
+  el('path', { d: 'M-9 0 L-7 -22 Q0 -32 7 -22 L9 0 Z', fill: '#7c8b5a', stroke: 'var(--ink)', 'stroke-width': 2 }, g);
+  el('circle', { cy: -26, r: 6, fill: '#9aa874', stroke: 'var(--ink)', 'stroke-width': 2 }, g);
+}
+ghoul(905, 372); ghoul(935, 380); ghoul(1050, 512);
+
+const pawn = el('g', { transform: `translate(${SPACES.dalaran.x + 38} ${SPACES.dalaran.y + 4})` }, pieces);
+el('ellipse', { cy: 4, rx: 22, ry: 8, fill: 'url(#shade)' }, pawn);
+el('circle', { cy: -14, r: 20, fill: '#5b8fd1', stroke: '#fff', 'stroke-width': 3 }, pawn);
+el('path', { d: 'M0 -27 L5 -17 L15 -15 L7 -8 L9 3 L0 -2 L-9 3 L-7 -8 L-15 -15 L-5 -17 Z', fill: '#fff' }, pawn);
+el('text', { class: 'tiny', x: 50, y: -10 }, pawn).textContent = 'Jaina (flat)';
+
+const hero = el('g', {}, pieces);
+const heroShadow = el('g', {}, hero);
+el('ellipse', { rx: 46, ry: 14, fill: 'url(#shade)' }, heroShadow);
+el('ellipse', { rx: 40, ry: 13, fill: 'none', stroke: '#f4d35e', 'stroke-width': 4, class: 'ring' }, heroShadow);
+const img = el('image', { href: 'hero-2.png', preserveAspectRatio: 'xMidYMax meet' }, hero);
+
+let at = 'theBreach';
+let heightPx = 140;
+const place = () => {
+  const s = SPACES[at];
+  hero.style.transform = `translate(${s.x - 8}px, ${s.y + 6}px)`;
+  const w = heightPx * 0.62;
+  Object.entries({ x: -w / 2, y: -heightPx, width: w, height: heightPx }).forEach(([k, v]) => img.setAttribute(k, v));
+};
+function moveTo(id) {
+  if (id === at) return;
+  const a = SPACES[at], b = SPACES[id];
+  const from = `translate(${a.x - 8}px, ${a.y + 6}px)`, to = `translate(${b.x - 8}px, ${b.y + 6}px)`;
+  const mid = `translate(${(a.x + b.x) / 2 - 8}px, ${(a.y + b.y) / 2 + 6 - 60}px)`;
+  at = id;
+  hero.animate([{ transform: from }, { transform: mid }, { transform: to }], { duration: 650, easing: 'ease-in-out' });
+  place();
+}
+
+const versions = document.getElementById('versions');
+[1, 2, 3, 4].forEach((v) => {
+  const b = document.createElement('button');
+  b.setAttribute('aria-pressed', v === 2);
+  b.title = `Version ${v}`;
+  b.innerHTML = `<img src="hero-${v}.png" alt="Version ${v}">`;
+  b.onclick = () => { img.setAttribute('href', `hero-${v}.png`); versions.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); };
+  versions.appendChild(b);
+});
+document.getElementById('size').oninput = (e) => { heightPx = +e.target.value; place(); };
+document.getElementById('shadow').onchange = (e) => { heroShadow.style.display = e.target.checked ? '' : 'none'; };
+document.getElementById('compare').onchange = (e) => { pawn.style.display = e.target.checked ? '' : 'none'; };
+place();
+</script>
+</body>
+</html>
